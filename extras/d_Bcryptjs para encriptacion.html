@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seguridad · Hash, Salt & Bcrypt — API Usuarios</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    body { background: #f8f9fa; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; scroll-behavior: smooth; }
+    .hero { background: linear-gradient(135deg, #198754 0%, #0d6efd 100%); color: #fff; padding: 3.5rem 1rem 3rem; border-radius: 0 0 1.5rem 1.5rem; position: relative; overflow: hidden; }
+    .hero::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(circle at 20% 80%, rgba(255,255,255,.15), transparent 40%); pointer-events: none; }
+    .hero h1 { font-weight: 700; }
+    .hero .badge-week { background: rgba(255,255,255,.2); padding: .4rem 1rem; border-radius: 999px; font-size: .85rem; font-weight: 500; }
+    
+    .card-folder { border-left: 5px solid #0d6efd; transition: transform .15s ease, box-shadow .15s ease; }
+    .card-folder:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.08); }
+    .card-folder.warn { border-left-color: #ffc107; }
+    .card-folder.ok   { border-left-color: #198754; }
+    .card-folder.err  { border-left-color: #dc3545; }
+    .card-folder.purple { border-left-color: #6610f2; }
+    
+    .tree { background: #1e1e1e; color: #d4d4d4; padding: 1.25rem 1.5rem; border-radius: .75rem; font-family: "Fira Code", Consolas, monospace; font-size: .88rem; line-height: 1.65; overflow-x: auto; }
+    .tree .folder  { color: #4fc3f7; }
+    .tree .file    { color: #ffcc80; }
+    .tree .comment { color: #6a9955; }
+    .tree .new     { color: #ff8a80; font-weight: 600; }
+    
+    .step-num { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 50%; background: #198754; color: #fff; font-weight: 700; margin-right: .5rem; flex-shrink: 0; }
+    
+    /* Arreglo visual de los bloques de código */
+    .code-block {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border-radius: .75rem;
+      padding: 1rem 1.25rem;
+      font-family: "Fira Code", Consolas, monospace;
+      font-size: .82rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+      word-wrap: normal;
+      margin-bottom: 0;
+    }
+    .code-block .kw { color: #569cd6; }
+    .code-block .st { color: #ce9178; }
+    .code-block .cm { color: #6a9955; }
+    .code-block .fn { color: #dcdcaa; }
+    .code-block .vr { color: #9cdcfe; }
+    .code-block .rm { color: #6c757d; text-decoration: line-through; }
+    
+    .analogy-card { background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%); border-left: 5px solid #198754; border-radius: .75rem; padding: 1.25rem; }
+    .analogy-card .emoji { font-size: 2rem; margin-right: .5rem; }
+    
+    .sidenav { position: sticky; top: 1rem; background: #fff; border-radius: .75rem; padding: 1rem; box-shadow: 0 .25rem .75rem rgba(0,0,0,.05); }
+    .sidenav a { display: block; padding: .35rem .75rem; border-radius: .4rem; color: #495057; text-decoration: none; font-size: .88rem; transition: background .15s; }
+    .sidenav a:hover { background: #f1f3f5; color: #198754; }
+    
+    section { scroll-margin-top: 1rem; }
+    footer { background: #212529; color: #adb5bd; padding: 2rem 0; margin-top: 4rem; }
+    
+    .tabla-pros-cons th { background: #198754 !important; color: white; }
+
+    .diff-box { border: 2px dashed #dee2e6; border-radius: .75rem; padding: 1rem; background: #fff; }
+    .diff-box .label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; }
+    .diff-box.before .label { color: #dc3545; }
+    .diff-box.after .label { color: #198754; }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <header class="hero text-center">
+    <span class="badge-week mb-3 d-inline-block">Semana 3 · AW2</span>
+    <h1 class="display-5 mb-2">🔐 Seguridad, Hash y Salt</h1>
+    <p class="lead mb-0">El fin del texto plano. Protegiendo contraseñas con Bcrypt.</p>
+  </header>
+
+  <main class="container my-5">
+    <div class="row g-4">
+
+      <!-- SIDEBAR -->
+      <div class="col-lg-3 d-none d-lg-block">
+        <nav class="sidenav">
+          <p class="fw-bold small text-uppercase text-muted mb-2">En esta clase</p>
+          <a href="#problema"><i class="bi bi-exclamation-triangle me-1"></i>El problema actual</a>
+          <a href="#licuadora"><i class="bi bi-cup-straw me-1"></i>¿Qué es un Hash?</a>
+          <a href="#salt"><i class="bi bi-snow me-1"></i>El Secreto del "Salt"</a>
+          <a href="#paso-a-paso"><i class="bi bi-terminal me-1"></i>Instalación paso a paso</a>
+          <a href="#cambios-codigo"><i class="bi bi-code-slash me-1"></i>Qué cambió en el código</a>
+          <a href="#pros-cons"><i class="bi bi-scale me-1"></i>Pros y Contras</a>
+          <a href="#migracion"><i class="bi bi-arrow-repeat me-1"></i>Migración de datos</a>
+          <a href="#proximo"><i class="bi bi-rocket-takeoff me-1"></i>Próxima semana</a>
+        </nav>
+      </div>
+
+      <!-- CONTENIDO -->
+      <div class="col-lg-9">
+
+        <!-- EL PROBLEMA -->
+        <section id="problema" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-exclamation-triangle text-danger"></i> El problema del texto plano</h2>
+          <p>Hasta ahora guardábamos las contraseñas tal cual las escribía el usuario. <strong>Esto es un peligro enorme.</strong></p>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <div class="card card-folder err h-100 shadow-sm"><div class="card-body"><h6 class="fw-bold">❌ Hackeo</h6><p class="small mb-0">Si acceden al JSON, ven todas las contraseñas.</p></div></div>
+            </div>
+            <div class="col-md-4">
+              <div class="card card-folder warn h-100 shadow-sm"><div class="card-body"><h6 class="fw-bold">❌ El Admin</h6><p class="small mb-0">El dueño de la base puede leer tu contraseña.</p></div></div>
+            </div>
+            <div class="col-md-4">
+              <div class="card card-folder err h-100 shadow-sm"><div class="card-body"><h6 class="fw-bold">❌ Efecto dominó</h6><p class="small mb-0">Si usás la misma pass en otro sitio, te hackean ahí también.</p></div></div>
+            </div>
+          </div>
+          <div class="code-block mb-0">
+<span class="cm">// ❌ ASÍ NO SE HACE NUNCA</span>
+{
+  "email": "ana@test.com",
+  "pass": <span class="new">"contrasenia1234"</span> // ¡Texto plano!
+}</div>
+        </section>
+
+        <!-- LA LICUADORA -->
+        <section id="licuadora" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-cup-straw text-success"></i> ¿Qué es un Hash? (La Licuadora)</h2>
+          <p>El Hashing es una función matemática de <strong>un solo sentido</strong>: convierte tu contraseña en un texto ilegible que jamás se puede revertir.</p>
+          <div class="analogy-card mb-3">
+            <span class="emoji">🍎</span>
+            <strong>Analogía:</strong> Metés una manzana en la licuadora y sale un licuado verde. <strong>Jamás</strong> vas a poder volver a armar la manzana entera desde el licuado. 
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="diff-box before border-danger">
+                <div class="label text-danger">Contraseña Original (Manzana)</div>
+                <div class="code-block">"contrasenia1234"</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="diff-box after border-success">
+                <div class="label text-success">Después del Hash (Licuado)</div>
+                <div class="code-block">"$2a$10$N9qo8uLOickgx2ZMRZoMye..."</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SALT -->
+        <section id="salt" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-snow text-info"></i> El Secreto del "Salt" (La Sal)</h2>
+          <p>
+            Si dos usuarios usan la misma contraseña ("123456"), un algoritmo de hash común generaría 
+            <strong>el mismo resultado</strong>. Si un hacker tiene una tabla de hashes conocidos (Rainbow Table), 
+            puede descubrir ambas contraseñas al mismo tiempo.
+          </p>
+          <p>
+            <strong>Bcrypt resuelve esto automáticamente con el Salt.</strong> Le agrega un texto aleatorio a la contraseña 
+            antes de hashearla. Aunque dos personas usen "123456", sus hashes serán completamente distintos.
+          </p>
+
+          <div class="analogy-card mb-4">
+            <span class="emoji">🧂</span>
+            <strong>Analogía:</strong> Es como cocinar. Si dos personas hacen el mismo puré de papas, saben igual. 
+            Pero si a uno le echás una pizca de sal y pimienta, y al otro le echás orégano, los platos finales saben distinto. 
+            El <strong>Salt</strong> es esa "pizca" única que hace que cada contraseña, incluso si es igual, sea única al hashearse.
+          </div>
+
+          <h5 class="mb-2">¿Dónde se guarda el Salt?</h5>
+          <p>En Bcrypt, el Salt viene <strong>incluido dentro del mismo string del hash</strong>.</p>
+          
+          <div class="code-block mb-4">
+<span class="cm">// El string del hash de Bcrypt tiene 3 partes:</span>
+<span class="st">$2a$10$</span><span class="vr">N9qo8uLOickgx2ZMRZoMye...</span>
+  │   │   └── <span class="cm">El hash + el Salt (generado aleatoriamente)</span>
+  │   └── <span class="cm">Rondas de hashing (10)</span>
+  └── <span class="cm">Versión del algoritmo</span></div>
+        </section>
+
+        <!-- INSTALACIÓN PASO A PASO -->
+        <section id="paso-a-paso" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-terminal text-dark"></i> Manos a la obra: Instalando Bcrypt</h2>
+          <p>Para empezar a hashear, necesitamos instalar la librería. Vamos a usar <strong>bcryptjs</strong> (es puro JavaScript, funciona en Windows sin problemas).</p>
+          
+          <ol class="list-group list-group-numbered shadow-sm mb-4">
+            <li class="list-group-item">
+              <span class="step-num">1</span>
+              <strong>Abrir la terminal</strong> en la carpeta del backend.
+            </li>
+            <li class="list-group-item">
+              <span class="step-num">2</span>
+              <strong>Instalar la librería:</strong> ejecutamos el comando de npm.
+            </li>
+            <li class="list-group-item">
+              <span class="step-num">3</span>
+              <strong>Importar en el controller:</strong> lo llamamos en la parte superior del archivo.
+            </li>
+          </ol>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="card card-folder h-100 shadow-sm">
+                <div class="card-header bg-white fw-bold">1. En la Terminal</div>
+                <div class="card-body p-0">
+                  <div class="code-block p-3 h-100" style="border-radius: 0 0 .75rem .75rem;">
+<span class="cm"># Instalamos bcryptjs</span>
+npm install bcryptjs</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card card-folder h-100 shadow-sm">
+                <div class="card-header bg-white fw-bold">2. En el Controller</div>
+                <div class="card-body p-0">
+                  <div class="code-block p-3 h-100" style="border-radius: 0 0 .75rem .75rem;">
+<span class="cm">// usuarios.controller.js</span>
+<span class="kw">import</span> bcrypt <span class="kw">from</span> <span class="st">'bcryptjs'</span>;</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CAMBIOS EN CÓDIGO -->
+        <section id="cambios-codigo" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-code-slash text-dark"></i> ¿Qué cambió exactamente en el código?</h2>
+          <p>Así quedaron nuestras funciones de Login y Crear Usuario.</p>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="diff-box before">
+                <div class="label">❌ Antes (Login)</div>
+                <div class="code-block">
+<span class="kw">const</span> <span class="vr">usuario</span> = listaUsuarios.<span class="fn">find</span>(
+  u =&gt; u.email === email &amp;&amp; 
+       u.pass === pass <span class="cm">// Comparación directa</span>
+);</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="diff-box after">
+                <div class="label">✅ Ahora (Login)</div>
+                <div class="code-block">
+<span class="kw">const</span> <span class="vr">usuario</span> = listaUsuarios.<span class="fn">find</span>(
+  u =&gt; u.email === email
+);
+
+<span class="kw">const</span> <span class="vr">passValida</span> = <span class="kw">await</span> <span class="fn">bcrypt.compare</span>(
+  pass, usuario.pass
+);</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="diff-box before">
+                <div class="label">❌ Antes (Crear Usuario)</div>
+                <div class="code-block">
+<span class="kw">const</span> <span class="vr">nuevoUsuario</span> = {
+  id: nuevoId,
+  email: email,
+  pass: pass <span class="cm">// ¡Texto plano!</span>
+};</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="diff-box after">
+                <div class="label">✅ Ahora (Crear Usuario)</div>
+                <div class="code-block">
+<span class="kw">const</span> <span class="vr">passHasheada</span> = <span class="kw">await</span> <span class="fn">bcrypt.hash</span>(pass, <span class="st">10</span>);
+
+<span class="kw">const</span> <span class="vr">nuevoUsuario</span> = {
+  id: nuevoId,
+  email: email,
+  pass: <span class="vr">passHasheada</span> <span class="cm">// 👈 Seguro</span>
+};</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROS Y CONTRAS -->
+        <section id="pros-cons" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-scale text-warning"></i> Bcrypt: Pros y Contras</h2>
+          <div class="table-responsive shadow-sm">
+            <table class="table table-hover align-middle mb-0 bg-white tabla-pros-cons">
+              <thead>
+                <tr>
+                  <th>✅ PROS</th>
+                  <th>❌ CONTRAS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>🔒 Diseñado específicamente para contraseñas (lento a propósito).</td>
+                  <td>⏳ Consume más CPU que otros algoritmos (por diseño).</td>
+                </tr>
+                <tr>
+                  <td>🧂 Salting automático: dos usuarios con misma pass = hashes distintos.</td>
+                  <td>📦 Requiere instalar una librería extra (<code>bcryptjs</code>).</td>
+                </tr>
+                <tr>
+                  <td>🛡️ Resistente a ataques de fuerza bruta (las rondas de sal hacen lento cada intento).</td>
+                  <td>🧠 No sirve para encriptar datos (solo para hashear contraseñas).</td>
+                </tr>
+                <tr>
+                  <td>🏆 Estándar de la industria (lo usan miles de empresas).</td>
+                  <td>🔄 No se puede "recuperar" la pass original (si se olvida, se resetea).</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- MIGRACIÓN -->
+        <section id="migracion" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-arrow-repeat text-primary"></i> ¿Qué pasa con los usuarios viejos?</h2>
+          <p>
+            Si ya tenías usuarios guardados con contraseñas en texto plano, no podés borrarlos. 
+            La solución es crear un <strong>script de migración</strong> que lea el JSON, hashee las contraseñas viejas y las guarde de nuevo.
+          </p>
+          
+          <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle"></i>
+            <strong>El script que armamos en clase:</strong> 
+            Detecta si la contraseña <strong>no</strong> empieza con <code>$2a$</code>. Si es así, significa que está en texto plano. La hashea y actualiza el archivo. 
+            Lo ejecutás con <code>node scripts/migrarPasswords.js</code> y listo. Tus usuarios viejos pueden loguearse de nuevo sin problema.
+          </div>
+        </section>
+
+        <!-- PRÓXIMO -->
+        <section id="proximo" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-rocket-takeoff text-primary"></i> Próxima semana</h2>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="card card-folder purple h-100 shadow-sm">
+                <div class="card-body">
+                  <h6>🔐 JWT (JSON Web Tokens)</h6>
+                  <p class="small mb-0">
+                    Ahora que sabemos hashear contraseñas, vamos a aprender a generar un <strong>token firmado</strong> para que el usuario no tenga que poner su contraseña en cada petición.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card card-folder ok h-100 shadow-sm">
+                <div class="card-body">
+                  <h6>🛡️ Rutas protegidas</h6>
+                  <p class="small mb-0">
+                    Con el token en mano, vamos a crear un <strong>middleware</strong> que verifique si el usuario está logueado antes de dejarlo crear, editar o borrar datos.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center">
+    <p class="mb-1">AW2 · Semana 3 · Seguridad, Hash y Bcrypt</p>
+    <small>Hecho con <i class="bi bi-heart-fill text-danger"></i> y mucho Express</small>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

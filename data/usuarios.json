@@ -1,0 +1,22 @@
+[
+  {
+    "id": 2,
+    "nombre": "Ana Martínez",
+    "edad": 32,
+    "ocupacion": "Arquitecta",
+    "ciudad_natal": "Buenos Aires, Argentina",
+    "direccion": "Av. Corrientes 1234, Piso 5, CABA",
+    "email": "ana.martinez@email.com",
+    "pass": "$2b$10$2SiCmoyS6vC8GsQHZb0efOBICLxNgr3zzIagjrB1NnWNmrEgBNwvm"
+  },
+  {
+    "id": 4,
+    "nombre": "Steve Rogers",
+    "edad": 110,
+    "ocupacion": "militar",
+    "ciudad_natal": "queens",
+    "direccion": "su casa",
+    "email": "steve@gmail.com",
+    "pass": "$2b$10$jDQHFpyTd7rJm1uFSsfAHezDpy4riP6z/5IQKBlzQDvdR7GjSkJAW"
+  }
+]

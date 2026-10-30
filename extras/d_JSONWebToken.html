@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seguridad · JWT — API Usuarios</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    body { background: #f8f9fa; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; scroll-behavior: smooth; }
+    /* Cambiamos el gradiente a tonos violetas/azules para diferenciar de Bcrypt */
+    .hero { background: linear-gradient(135deg, #6610f2 0%, #0dcaf0 100%); color: #fff; padding: 3.5rem 1rem 3rem; border-radius: 0 0 1.5rem 1.5rem; position: relative; overflow: hidden; }
+    .hero::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(circle at 20% 80%, rgba(255,255,255,.15), transparent 40%); pointer-events: none; }
+    .hero h1 { font-weight: 700; }
+    .hero .badge-week { background: rgba(255,255,255,.2); padding: .4rem 1rem; border-radius: 999px; font-size: .85rem; font-weight: 500; }
+    
+    .card-folder { border-left: 5px solid #0d6efd; transition: transform .15s ease, box-shadow .15s ease; }
+    .card-folder:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.08); }
+    .card-folder.warn { border-left-color: #ffc107; }
+    .card-folder.ok   { border-left-color: #198754; }
+    .card-folder.err  { border-left-color: #dc3545; }
+    .card-folder.purple { border-left-color: #6610f2; }
+    
+    .tree { background: #1e1e1e; color: #d4d4d4; padding: 1.25rem 1.5rem; border-radius: .75rem; font-family: "Fira Code", Consolas, monospace; font-size: .88rem; line-height: 1.65; overflow-x: auto; }
+    .tree .folder  { color: #4fc3f7; }
+    .tree .file    { color: #ffcc80; }
+    .tree .comment { color: #6a9955; }
+    .tree .new     { color: #ff8a80; font-weight: 600; }
+    
+    .step-num { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 50%; background: #6610f2; color: #fff; font-weight: 700; margin-right: .5rem; flex-shrink: 0; }
+    
+    /* 🔥 ARREGLO VISUAL DE LOS BLOQUES DE CÓDIGO 🔥 */
+    .code-block {
+      background: #1e1e1e; 
+      color: #d4d4d4; 
+      border-radius: .75rem; 
+      padding: 1rem 1.25rem;
+      font-family: "Fira Code", Consolas, monospace; 
+      font-size: .82rem; 
+      line-height: 1.6;
+      overflow-x: auto; 
+      white-space: pre-wrap; /* Mantiene los espacios pero permite saltos de línea si no entra */
+      word-break: break-all; /* Evita que se apilen letras si hay una palabra muy larga */
+      margin-bottom: 0;
+    }
+    .code-block .kw { color: #569cd6; }
+    .code-block .st { color: #ce9178; }
+    .code-block .cm { color: #6a9955; }
+    .code-block .fn { color: #dcdcaa; }
+    .code-block .vr { color: #9cdcfe; }
+    .code-block .rm { color: #6c757d; text-decoration: line-through; }
+    
+    .analogy-card { background: linear-gradient(135deg, #e3f2fd 0%, #fff 100%); border-left: 5px solid #0dcaf0; border-radius: .75rem; padding: 1.25rem; }
+    .analogy-card .emoji { font-size: 2rem; margin-right: .5rem; }
+    
+    .sidenav { position: sticky; top: 1rem; background: #fff; border-radius: .75rem; padding: 1rem; box-shadow: 0 .25rem .75rem rgba(0,0,0,.05); }
+    .sidenav a { display: block; padding: .35rem .75rem; border-radius: .4rem; color: #495057; text-decoration: none; font-size: .88rem; transition: background .15s; }
+    .sidenav a:hover { background: #f1f3f5; color: #6610f2; }
+    
+    section { scroll-margin-top: 1rem; }
+    footer { background: #212529; color: #adb5bd; padding: 2rem 0; margin-top: 4rem; }
+    
+    .tabla-pros-cons th { background: #6610f2 !important; color: white; }
+
+    .diff-box { border: 2px dashed #dee2e6; border-radius: .75rem; padding: 1rem; background: #fff; }
+    .diff-box .label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; }
+    .diff-box.before .label { color: #dc3545; }
+    .diff-box.after .label { color: #198754; }
+
+    /* Animación para la alerta */
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .alert-animada { animation: pulse-border 2s infinite; border: 2px solid #dc3545; }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <header class="hero text-center">
+    <span class="badge-week mb-3 d-inline-block">Semana 4 · AW2</span>
+    <h1 class="display-5 mb-2">🛡️ Seguridad Avanzada: JWT</h1>
+    <p class="lead mb-0">El problema de la "pulsera VIP" y la protección de rutas.</p>
+  </header>
+
+  <main class="container my-5">
+    <div class="row g-4">
+
+      <!-- SIDEBAR -->
+      <div class="col-lg-3 d-none d-lg-block">
+        <nav class="sidenav">
+          <p class="fw-bold small text-uppercase text-muted mb-2">En esta clase</p>
+          <a href="#problema"><i class="bi bi-question-circle me-1"></i>El problema del login</a>
+          <a href="#analogia"><i class="bi bi-ticket-perforated me-1"></i>¿Qué es un JWT?</a>
+          <a href="#flujo"><i class="bi bi-arrow-right-circle me-1"></i>El flujo del Token</a>
+          <a href="#instalacion"><i class="bi bi-terminal me-1"></i>Instalación y Config</a>
+          <a href="#paso-a-paso"><i class="bi bi-code-slash me-1"></i>Código Paso a Paso</a>
+          <a href="#pros-cons"><i class="bi bi-scale me-1"></i>Pros y Contras</a>
+          <a href="#proximo"><i class="bi bi-rocket-takeoff me-1"></i>Buenas Prácticas</a>
+        </nav>
+      </div>
+
+      <!-- CONTENIDO -->
+      <div class="col-lg-9">
+
+        <!-- EL PROBLEMA -->
+        <section id="problema" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-question-circle text-primary"></i> El problema del Login tradicional</h2>
+          <p>
+            La clase pasada logramos que el usuario se autentique (validamos su contraseña hasheada). 
+            Pero, ¿qué pasa cuando quiere hacer una acción protegida, como <strong>borrar un usuario</strong>?
+          </p>
+          <p>
+            Si no hacemos nada, cualquiera podría hacer un DELETE a la API sin estar logueado. 
+            Y si le pedimos que mande su contraseña en cada petición, estaríamos exponiendo sus datos constantemente.
+          </p>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="card card-folder err h-100 shadow-sm">
+                <div class="card-body">
+                  <h6 class="fw-bold">❌ Sin Token</h6>
+                  <p class="small mb-0">La API está abierta. Cualquiera con Postman puede borrar la base de datos.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card card-folder warn h-100 shadow-sm">
+                <div class="card-body">
+                  <h6 class="fw-bold">❌ Mandar la pass siempre</h6>
+                  <p class="small mb-0">Inseguro y molesto. El usuario tendría que escribirla en cada clic.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ANALOGÍA -->
+        <section id="analogia" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-ticket-perforated text-info"></i> ¿Qué es un JWT? (La Pulsera VIP)</h2>
+          <p>
+            <strong>JWT (JSON Web Token)</strong> es un "pase digital". Una vez que entrás al sistema, 
+            el servidor te da un token único. En cada petición, mostrás ese token en vez de tu contraseña.
+          </p>
+
+          <div class="analogy-card mb-4">
+            <span class="emoji">🎟️</span>
+            <strong>Analogía:</strong> Imaginate un boliche. En la puerta (el Login) mostrás tu DNI (la contraseña). 
+            El patovica (el backend) te da una <strong>pulsera VIP (el Token)</strong>. 
+            Para entrar a la pista principal (las rutas protegidas), no volvés a mostrar tu DNI, solo mostrás la pulsera. 
+            El patovica de la pista solo mira que la pulsera sea original y no esté vencida.
+          </div>
+
+          <h5 class="mb-2">¿Qué tiene adentro un Token? (La estructura)</h5>
+          <p>Un JWT es un string separado por 3 puntos. No es magia, es solo texto codificado.</p>
+          
+          <div class="code-block mb-3">
+<span class="cm">// Estructura del token:</span>
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhbmFAZW1haWwuY29tIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+  └────────────────────────────────┘ └──────────────────────────┘ └────────────────────────────┘
+             <span class="kw">1. Header</span>                       <span class="kw">2. Payload (Los datos)</span>          <span class="kw">3. Firma (La garantía)</span></div>
+        </section>
+
+        <!-- FLUJO -->
+        <section id="flujo" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-arrow-right-circle text-primary"></i> El flujo del Token</h2>
+          
+          <ol class="list-group list-group-numbered shadow-sm mb-4">
+            <li class="list-group-item"><span class="step-num">1</span> El usuario manda email y pass al <code>/login</code>.</li>
+            <li class="list-group-item"><span class="step-num">2</span> El backend valida la pass. Si es correcta, <strong>genera el token</strong> con <code>jwt.sign()</code>.</li>
+            <li class="list-group-item"><span class="step-num">3</span> El frontend recibe el token y lo <strong>guarda</strong> en el <code>localStorage</code>.</li>
+            <li class="list-group-item"><span class="step-num">4</span> En cada petición protegida (ej. borrar), el front envía el token en el Header: <code>Authorization: Bearer &lt;token&gt;</code>.</li>
+            <li class="list-group-item"><span class="step-num">5</span> El backend <strong>verifica el token</strong> con <code>jwt.verify()</code>. Si es válido, deja pasar la acción.</li>
+          </ol>
+        </section>
+
+        <!-- INSTALACIÓN Y CONFIG -->
+        <section id="instalacion" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-terminal text-dark"></i> Manos a la obra: Instalación y Configuración</h2>
+          
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="card card-folder h-100 shadow-sm">
+                <div class="card-header bg-white fw-bold">1. En la Terminal</div>
+                <div class="card-body p-0">
+                  <div class="code-block p-3 h-100" style="border-radius: 0 0 .75rem .75rem;">
+<span class="cm"># Instalamos la librería</span>
+npm install jsonwebtoken</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card card-folder h-100 shadow-sm">
+                <div class="card-header bg-white fw-bold">2. En el archivo .env</div>
+                <div class="card-body p-0">
+                  <div class="code-block p-3 h-100" style="border-radius: 0 0 .75rem .75rem;">
+<span class="cm"># Creamos una clave secreta (Larga y difícil)</span>
+JWT_SECRET=MiSuperSecretoDeAW2_2026</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-animada bg-white mt-4">
+            <h5 class="alert-heading fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill"></i> ¡Atención con el .gitignore!</h5>
+            <p class="mb-0">
+              Normalmente, el archivo <code>.env</code> <strong>NUNCA</strong> se sube a GitHub (va en el <code>.gitignore</code>), porque contiene contraseñas. 
+              <br><br>
+              <strong>Para esta entrega, NO lo ignoren.</strong> Lo necesito visible para poder corregir la devolución de la clase. 
+              En un proyecto real, suban un archivo <code>.env.example</code> con las variables vacías, pero acá dejen el <code>.env</code> con el secreto.
+            </p>
+          </div>
+        </section>
+
+        <!-- CÓDIGO PASO A PASO -->
+        <section id="paso-a-paso" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-code-slash text-dark"></i> El Código Paso a Paso</h2>
+
+          <h5 class="fw-bold mt-4">A. Generar el Token (Controller Login)</h5>
+          <div class="code-block mb-4">
+<span class="kw">import</span> jwt <span class="kw">from</span> <span class="st">'jsonwebtoken'</span>;
+
+<span class="cm">// ...</span>
+<span class="kw">const</span> <span class="vr">payload</span> = { id: usuario.id, email: usuario.email };
+<span class="kw">const</span> <span class="vr">token</span> = <span class="fn">jwt.sign</span>(payload, process.env.JWT_SECRET, { expiresIn: <span class="st">'2h'</span> });
+
+res.<span class="fn">json</span>({ mensaje: <span class="st">'Bienvenido'</span>, <span class="vr">token</span>: <span class="vr">token</span> });</div>
+
+          <h5 class="fw-bold mt-4">B. El Middleware Guardián (Nuevo archivo)</h5>
+          <div class="code-block mb-4">
+<span class="cm">// middlewares/auth.middleware.js</span>
+<span class="kw">export const</span> <span class="fn">verificarToken</span> = (req, res, next) => {
+  <span class="kw">const</span> <span class="vr">authHeader</span> = req.headers[<span class="st">'authorization'</span>];
+  <span class="kw">const</span> <span class="vr">token</span> = authHeader && authHeader.<span class="fn">split</span>(<span class="st">' '</span>)[<span class="st">1</span>];
+
+  <span class="kw">if</span> (!<span class="vr">token</span>) <span class="kw">return</span> res.<span class="fn">status</span>(<span class="st">401</span>).<span class="fn">json</span>({ error: <span class="st">'Falta el token'</span> });
+
+  <span class="kw">try</span> {
+    <span class="kw">const</span> <span class="vr">verificado</span> = jwt.<span class="fn">verify</span>(<span class="vr">token</span>, process.env.JWT_SECRET);
+    req.usuario = <span class="vr">verificado</span>;
+    <span class="fn">next</span>(); <span class="cm">// Pasa a la ruta</span>
+  } <span class="kw">catch</span> (error) {
+    <span class="kw">return</span> res.<span class="fn">status</span>(<span class="st">403</span>).<span class="fn">json</span>({ error: <span class="st">'Token inválido o vencido'</span> });
+  }
+};</div>
+
+          <h5 class="fw-bold mt-4">C. Proteger las Rutas</h5>
+          <div class="code-block mb-4">
+<span class="cm">// usuarios.routes.js</span>
+<span class="kw">import</span> { verificarToken } <span class="kw">from</span> <span class="st">'../middlewares/auth.middleware.js'</span>;
+
+<span class="cm">// Ruta pública</span>
+router.<span class="fn">post</span>(<span class="st">'/login'</span>, login);
+
+<span class="cm">// Ruta protegida: le pasamos el guardián en el medio</span>
+router.<span class="fn">delete</span>(<span class="st">'/:id'</span>, verificarToken, eliminarUsuario);</div>
+        </section>
+
+        <!-- PROS Y CONTRAS -->
+        <section id="pros-cons" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-scale text-warning"></i> JWT: Pros y Contras</h2>
+          <div class="table-responsive shadow-sm">
+            <table class="table table-hover align-middle mb-0 bg-white tabla-pros-cons">
+              <thead>
+                <tr>
+                  <th>✅ PROS</th>
+                  <th>❌ CONTRAS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>⚡ Súper rápido: el servidor no tiene que buscar la sesión en la base de datos, solo verifica la firma.</td>
+                  <td>🚫 Una vez emitido, no se puede revocar fácilmente (si lo roban, sirve hasta que venza).</td>
+                </tr>
+                <tr>
+                  <td>📦 Autocontenido: el token ya lleva los datos del usuario adentro (id, email).</td>
+                  <td>📦 Más pesado que una sesión tradicional (viaja en cada header).</td>
+                </tr>
+                <tr>
+                  <td>🌐 Ideal para APIs y apps móviles (funciona en cualquier lenguaje).</td>
+                  <td>💾 Si lo guardás en localStorage, es vulnerable a ataques XSS (robo por scripts).</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- PRÓXIMO / BUENAS PRÁCTICAS -->
+        <section id="proximo" class="mb-5">
+          <h2 class="h4 mb-3"><i class="bi bi-rocket-takeoff text-primary"></i> El mundo real (y qué haremos después)</h2>
+          <p>
+            El estándar de la industria hoy en día <strong>no es usar localStorage</strong> para guardar el token.
+            Si un hacker logra inyectar un script (XSS), puede robarse el token y hacerse pasar por tu usuario.
+          </p>
+          <div class="alert alert-success mb-0">
+            <i class="bi bi-check-circle"></i>
+            <strong>La solución pro:</strong> Guardar el token en <strong>Cookies HttpOnly</strong>. 
+            Son cookies que JavaScript no puede leer (evita el XSS), pero el navegador las envía automáticamente al backend.
+            <br><br>
+            <em>¡Pero eso queda para la próxima clase de seguridad!</em>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center">
+    <p class="mb-1">AW2 · Semana 4 · Autenticación y JWT</p>
+    <small>Hecho con <i class="bi bi-heart-fill text-danger"></i> y mucho Express</small>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
